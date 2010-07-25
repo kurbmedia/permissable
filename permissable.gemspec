@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{permissable}
-  s.version = "0.0.0"
+  s.version = "0.0.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Brent Kirby"]
@@ -23,7 +23,12 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "init.rb",
      "lib/permissable.rb",
+     "lib/permissable/member.rb",
+     "lib/permissable/permission.rb",
+     "lib/permissable/resource.rb",
+     "permissable.gemspec",
      "test/helper.rb",
      "test/test_permissable.rb"
   ]

@@ -22,9 +22,7 @@ module Permissable
       
       # Can this member perform the requested action?
       def can?(method, resource)
-        method = method.to_s
-        throw Permissable::ResourceNotPermissable unless resource.respond_to? :permissable_methods && resource.permissable_methods.include?(method)
-        throw Permissable::PermissionNotDefined unless resource.permissable_methods.include?(method)        
+        method = method.to_s       
         permissions.for_resource(resource).with_permission_to(method).exists?
       end
       
@@ -33,6 +31,7 @@ module Permissable
         method    = method.to_s.downcase
         klassname = permissable_by_association ? permissable_by_association.to_s.classify : self.class.to_s
         
+        throw Permissable::ResourceNotPermissable unless resource.respond_to? :permissable_methods
         throw Permissable::PermissionNotDefined unless resource.permissable_methods.include?(method)
         
         members.each do |m|
