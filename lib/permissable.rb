@@ -29,6 +29,15 @@ module Permissable
       
     end
     
+    class PermissableError < StandardError
+    end
+    
+    class PermissionNotDefined < PermissableError
+    end
+    
+    class ResourceNotPermissable < PermissableError
+    end
+    
     module ClassMethods
       
       # +permissable+ gives the class its called on the ability to effect various permission states on the resources

@@ -30,6 +30,7 @@ module Permissable
       def can!(method, resource)
         method    = method.to_s.downcase
         klassname = permissable_by_association ? permissable_by_association.to_s.classify : self.class.to_s
+        
         members.each do |m|
           next if resource.permissions.for_member_and_resource(m,resource).exists?
           new_permission = Permission.new()
