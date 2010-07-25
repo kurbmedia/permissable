@@ -50,9 +50,6 @@ module Permissable
       #   ie: has_many roles would be: :with => :roles. belongs_to role would be :with => :role
       def permissable(options = {})
         
-        write_inheritable_attribute :permissions_scope, {}        
-        class_inheritable_reader :permissions_scope
-        
         write_inheritable_attribute :permissable_by_association, (options[:with] || false)
         class_inheritable_reader :permissable_by_association
            
@@ -71,9 +68,7 @@ module Permissable
 
         resources.each do |resource|
 
-          klass = resource.to_s.classify
-          permissions_scope.merge!({ klass => methods })
-          
+          klass = resource.to_s.classify          
           klass.constantize.class_eval do
             
             write_inheritable_attribute :permissable_methods, methods
