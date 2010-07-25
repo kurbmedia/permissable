@@ -28,13 +28,13 @@ This documention is incomplete... I'll add more later.
 	    configure.permission_for :read, :posts, :categories
 	    configure.permission_for [:read, :write, :moderate], :comments
 	  end
-    end
+	end
 
 The permissable method accepts a block containing permission declarations.
 Each call to permission_for accepts two attributes.
 
- * +method+: The permission you want to assign (read, write, moderate, etc)
- * +resources+: A list of resources to assign those permissions to
+* method: The permission you want to assign (read, write, moderate, etc)
+* resources: A list of resources to assign those permissions to
 
 
 == Note on Patches/Pull Requests
@@ -49,4 +49,4 @@ Each call to permission_for accepts two attributes.
 
 == Copyright
 
-Copyright (c) 2010 Brent Kirby. See LICENSE for details.
+Copyright (c) 2010 kurb media, llc. See LICENSE for details.
