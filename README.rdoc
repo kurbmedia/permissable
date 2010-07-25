@@ -1,6 +1,41 @@
 = permissable
 
-Description goes here.
+Permissable creates the ability to add a permissions system to "resources" based on a "member".
+It allows you to define a member using the +permissable+ method:
+
+	class User < ActiveRecord::Base
+	  permissable do |configure|
+	    configure.permission_for :read, :posts, :categories
+	    configure.permission_for [:read, :write, :moderate], :comments
+	  end
+	end
+
+Permissable uses a single "permissions" table (and subsuquently a Permission model), with a polymorphic relationship
+between both the member and the resource.
+
+Important to know... This is my first attempt at a RubyGem. I'm using the gem itself for an application currently in development, 
+so you can be assured at least the basic functionality should work as it goes along. For the time being, I'm not writing any tests,
+but there will be some later.
+
+I decided to develop it because I couldn't find anything that achieved the same thing that didn't seem cumbersome or akward to configure.
+
+This documention is incomplete... I'll add more later.
+
+== Usage
+
+	class User < ActiveRecord::Base
+	  permissable do |configure|
+	    configure.permission_for :read, :posts, :categories
+	    configure.permission_for [:read, :write, :moderate], :comments
+	  end
+    end
+
+The permissable method accepts a block containing permission declarations.
+Each call to permission_for accepts two attributes.
+
+ * +method+: The permission you want to assign (read, write, moderate, etc)
+ * +resources+: A list of resources to assign those permissions to
+
 
 == Note on Patches/Pull Requests
  

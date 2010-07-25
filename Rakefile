@@ -5,8 +5,8 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "permissable"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.summary = %Q{Basic member/resource permission system for ActiveRecord objects.}
+    gem.description = %Q{Permissable lets you set a number of 'permissions' to your database models. By assigning 'members' to 'resources' (models) you can specify various permission states.}
     gem.email = "brent@kurbmedia.com"
     gem.homepage = "http://github.com/kurbmedia/permissable"
     gem.authors = ["Brent Kirby"]
