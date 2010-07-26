@@ -4,7 +4,7 @@ Permissable creates the ability to add a permissions system to "resources" based
 It allows you to define a member using the +permissable+ method:
 
 	class User < ActiveRecord::Base
-		has_permissions_for [:section, :category], :to => [:read, :write, :moderate]	                     
+	  has_permissions_for [:section, :category], :to => [:read, :write, :moderate]
 	end
 
 Permissable uses a single "permissions" table (and subsuquently a Permission model), with a polymorphic relationship
