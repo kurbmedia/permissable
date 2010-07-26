@@ -45,7 +45,7 @@ module Permissable
       
       def cannot!(methods, resources)
         methods  = [methods].flatten.uniq
-        existing = permissions.for_resource(resource).with_permission_to(methods).all.collect{ |perm| perm.id }
+        existing = permissions.for_resource(resource).with_permission_to(methods).all.collect{ |perm| perm.id }.uniq
         Permission.destroy(existing)
       end
       

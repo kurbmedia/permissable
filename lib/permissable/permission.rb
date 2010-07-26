@@ -21,11 +21,12 @@ class Permission < ActiveRecord::Base
       perm = perm.is_a?(Array) ? perm.collect{ |p| p.to_s } : perm.to_s
       where(:permission_type => perm)
     end
-  end
-  
-  def flatten(obj)
-    return { :ids => obj, :types => obj.class.to_s } unless obj.is_a?(Array)
-    { :ids => obj.collect{ |o| o.id }, :types => obj.collect{ |o| o.class.to_s } }
+    
+    def flatten(obj)
+      return { :ids => obj, :types => obj.class.to_s } unless obj.is_a?(Array)
+      { :ids => obj.collect{ |o| o.id }, :types => obj.collect{ |o| o.class.to_s } }
+    end
+    
   end
     
 end
