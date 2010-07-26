@@ -4,94 +4,51 @@ module Permissable
     
     def self.included(base)      
       base.send :include, InstanceMethods
-      member_klass = (base.permissable_by_association) ? base.permissable_by_association.to_s.classify.constantize : base
-      member_klass.class_eval do 
-        has_many :permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }
-      end
-      base.send :include, ((base.permissable_by_association) ? AssociatedMethods : MemberMethods)
+      base.send :attr_protected, :member_identifier
     end
-    
+     
     # This module includes methods that should exist on ALL members.
     module InstanceMethods
       
-      # When a member is initialized, its definitions are eager-loaded to cut down on database queries.
-      # Once loaded all of the permission definitions are cached into the @permission_definitions variable.
-      attr_reader :permission_definitions
-      
-      # Can this member perform the requested action?
+      # The can? method returns a boolen value specifying whether or not this member can perform the specific method on resource
       def can?(method, resource)
-        method = method.to_s       
-        permissions.for_resource(resource).with_permission_to(method).exists?
+        permissions_for(resource, method).exists?
       end
       
-      # Set a permission
-      def can!(methods, resource)
-        methods = [methods].flatten.uniq
+      # Alias to can? to get the inverse.
+      def cannot?(method, resource); !can?(method, resource); end
+      
+      
+      # This sets the member information for our permission lookup based on the current resource scope.
+      # These attributes correspond to the correct member_id and member_type in our permissions table.
+      def member_identifier(scope)
         
-        members.each do |member|
-          methods.each do |perm|
-            next if resource.permissions.for_member(member).with_permission_to(perm).exists?
-            new_permission = Permission.new({ :permission_type => method.to_s })
-            new_permission.member   = m
-            new_permission.resource = resource
-            new_permission.save 
-          end
-        end        
+        @member_identifier ||= {}
+        # The scope should be the classname of a resource we are getting identifiers for
+        scope = scope.to_s.classify
+        
+        return @member_identifier[scope] unless @member_identifier[scope].nil?
+        return { :member_id => self.id, :member_type => self.class.to_s } unless permissable_associations.has_key?(scope)
+        
+        assoc_key = permissable_associations[scope]
+        assoc     = send "#{assoc_key}".to_sym
+        
+        @member_identifier[scope] = { :member_id => (assoc.is_a?(Array) ? assoc.collect{ |a| a.id } : assoc.id ), :member_type => assoc_key.to_s.classify }
+        
       end
+          
+      # Provide an instance method to our associations
+      def permissable_associations; self.class.permissable_associations; end
       
-      def cannot?(methods, resource)
-        !can?(methods, resource)
-      end
+      private 
       
-      def cannot!(methods, resources)
-        methods  = [methods].flatten.uniq
-        existing = permissions.for_resource(resource).with_permission_to(methods).all.collect{ |perm| perm.id }.uniq
-        Permission.destroy(existing)
-      end
-      
-      def permissions_for(resource)
-        permissions.for_resource(resource).all.collect{ |p| p.permission_type.to_sym }.uniq
-      end
-      
-      def permissions_for?(resource)
-        !permissions_for(resource).empty?
-      end
-      
-      private
-      
-      def get_const(resource)
-        resource.class.to_s.classify.constantize
-      end
-            
-    end
-    
-    # This module gets included on member classes that are permissable directly.
-    module MemberMethods
-      alias_attribute :member_id, :id
-      def members; [self]; end
-    end
-    
-    # This module gets included on member classes that are permissable with an association.
-    module AssociatedMethods
-      
-      attr_reader :permissions
-      attr_reader :member_id
-      
-      def permissions
-        return @permissions unless @permissions.nil?
-        @permissions = Permission.where(:member_id => member_id, :member_type => association.to_s)
-      end
-      
-      def association
-        permissable_by_association.to_s.classify.constantize
-      end
-      
-      def member_id
-        @member_id || association.all.collect{ |a| a.attributes['id'] }
-      end
-      
-      def members
-        association.all
+      # Looks up permissions for a particular resource.
+      def permissions_for(resource, methods = nil)
+        scope  = resource.class.to_s.classify
+        return self.permissions unless permissable_associations.has_key?(scope)
+        relation = Permission.where(member_identifier(scope)).for_resource(resource)
+        relation = relation.with_permission_to(methods) unless methods.nil?
+        relation
       end
       
     end
