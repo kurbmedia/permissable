@@ -32,7 +32,7 @@ module Permissable
     class PermissableError < StandardError
     end
     
-    class PermissionNotDefined < PermissableError
+    class PermissionNotDefined < PermissableError      
     end
     
     class ResourceNotPermissable < PermissableError

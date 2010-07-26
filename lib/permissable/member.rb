@@ -16,7 +16,7 @@ module Permissable
       
       # When a member is initialized, its definitions are eager-loaded to cut down on database queries.
       # Once loaded all of the permission definitions are cached into the @permission_definitions variable.
-      attr_accessor :permission_definitions
+      attr_reader :permission_definitions
       
       # Can this member perform the requested action?
       def can?(method, resource)
