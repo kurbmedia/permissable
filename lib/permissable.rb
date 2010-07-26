@@ -52,11 +52,14 @@ module Permissable
         
         write_inheritable_attribute :permissable_by_association, (options[:with] || false)
         class_inheritable_reader :permissable_by_association
-           
+        
+        write_inheritable_attribute :has_permissions_for, []
+        class_inheritable_accessor :has_permissions_for
+
         # The class that called permissable becomes a member.
         include Permissable::Member
-        has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless permissable_by_association
         
+        # Yield the permissions block to add permissions.
         yield self
         
       end
@@ -64,29 +67,20 @@ module Permissable
       # +permission_for+ is called via the permissable block
       def permission_for(methods, *resources)
         
-        methods = [methods] unless methods.is_a?(Array)
-
-        resources.each do |resource|
-
-          klass = resource.to_s.classify          
-          klass.constantize.class_eval do
-            
-            write_inheritable_attribute :permissable_methods, methods
-            class_inheritable_reader   :permissable_methods
-            has_many(:permissions, :as => :resource, :conditions => { :resource_type => "#{self.to_s}" })
-            
-            include Permissable::Resource
-            
-          end
-          
-        end 
-               
-      end
-      
-    end
-    
+        methods = [methods].flatten
+        
+        # Add each resource to the member class' permissions list.
+        has_permissions_for.concat(resources).flatten.uniq
+        
+        resources.uniq.each do |resource|          
+          #Include the Resource module to each resource class.
+          resource.to_s.classify.constantize.class_eval{ include Permissable::Resource }
+          resource.to_s.classify.constantize.send :set_permissions!, methods
+        end
+        
+      end   
+         
+    end    
 end
 
-ActiveSupport.on_load :active_record do
-  ActiveRecord::Base.send :include, Permissable
-end
+ActiveRecord::Base.send :include, Permissable

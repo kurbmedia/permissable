@@ -2,23 +2,21 @@ module Permissable
   
   module Member
     
-    def self.included(base)
-      
+    def self.included(base)      
       base.send :include, InstanceMethods
-      
-      if base.permissable_by_association
-        base.send :include, AssociatedMethods
-        # Add a has many to our association so it can find permissions.
-        base.permissable_by_association.to_s.classify.constantize.class_eval do
-          has_many :permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }
-        end
-      else
-        base.send :include, MemberMethods
+      member_klass = (base.permissable_by_association) ? base.permissable_by_association.to_s.classify.constantize : base
+      member_klass.class_eval do 
+        has_many :permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }
       end
+      base.send :include, ((base.permissable_by_association) ? AssociatedMethods : MemberMethods)
     end
     
     # This module includes methods that should exist on ALL members.
     module InstanceMethods
+      
+      # When a member is initialized, its definitions are eager-loaded to cut down on database queries.
+      # Once loaded all of the permission definitions are cached into the @permission_definitions variable.
+      attr_accessor :permission_definitions
       
       # Can this member perform the requested action?
       def can?(method, resource)
@@ -27,38 +25,36 @@ module Permissable
       end
       
       # Set a permission
-      def can!(method, resource)
-        method    = method.to_s.downcase
-        klassname = permissable_by_association ? permissable_by_association.to_s.classify : self.class.to_s
+      def can!(methods, resource)
+        methods = [methods].flatten.uniq
         
-        throw Permissable::ResourceNotPermissable unless resource.respond_to? :permissable_methods
-        throw Permissable::PermissionNotDefined unless resource.permissable_methods.include?(method)
-        
-        members.each do |m|
-          next if resource.permissions.for_member_and_resource(m,resource).exists?
-          new_permission = Permission.new()
-          new_permission.member   = m
-          new_permission.resource = resource
-          new_permission.permission_type = method
-          new_permission.save 
-        end
-        
+        members.each do |member|
+          methods.each do |perm|
+            next if resource.permissions.for_member(member).with_permission_to(perm).exists?
+            new_permission = Permission.new({ :permission_type => method.to_s })
+            new_permission.member   = m
+            new_permission.resource = resource
+            new_permission.save 
+          end
+        end        
+      end
+      
+      def cannot?(methods, resource)
+        !can?(methods, resource)
+      end
+      
+      def cannot!(methods, resources)
+        methods  = [methods].flatten.uniq
+        existing = permissions.for_resource(resource).with_permission_to(methods).all.collect{ |perm| perm.id }
+        Permission.destroy(existing)
       end
       
       def permissions_for(resource)
-        if resource.is_a?(Class)
-          permissions_scope[resource.to_s]
-        else
-          permissions.for_resource(resource).all.collect{ |p| p.permission_type.to_sym }.uniq
-        end
+        permissions.for_resource(resource).all.collect{ |p| p.permission_type.to_sym }.uniq
       end
       
       def permissions_for?(resource)
         !permissions_for(resource).empty?
-      end
-      
-      def permissions_for!(resources, *perms)
-        
       end
       
       private

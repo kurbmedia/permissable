@@ -4,11 +4,13 @@ class Permission < ActiveRecord::Base
   
   class << self
     def for_member(member)
-      where(:member_id => member.id, :member_type => member.class.to_s)
+      member = flatten(member)
+      where(:member_id => member[:ids], :member_type => member[:types])
     end
     
     def for_resource(resource)
-      where(:resource_id => resource.id, :resource_type => resource.class.to_s)
+      resource = flatten(resource)
+      where(:resource_id => resource[:ids], :resource_type => resource[:types])
     end
     
     def for_member_and_resource(member, resource)
@@ -16,8 +18,14 @@ class Permission < ActiveRecord::Base
     end
     
     def with_permission_to(perm)
-      where(:permission_type => perm.to_s)
+      perm = perm.is_a?(Array) ? perm.collect{ |p| p.to_s } : perm.to_s
+      where(:permission_type => perm)
     end
   end
   
+  def flatten(obj)
+    return { :ids => obj, :types => obj.class.to_s } unless obj.is_a?(Array)
+    { :ids => obj.collect{ |o| o.id }, :types => obj.collect{ |o| o.class.to_s } }
+  end
+    
 end
