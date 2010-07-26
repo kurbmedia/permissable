@@ -4,10 +4,7 @@ Permissable creates the ability to add a permissions system to "resources" based
 It allows you to define a member using the +permissable+ method:
 
 	class User < ActiveRecord::Base
-	  permissable do |configure|
-	    configure.permission_for :read, :posts, :categories
-	    configure.permission_for [:read, :write, :moderate], :comments
-	  end
+		has_permissions_for [:section, :category], :to => [:read, :write, :moderate]	                     
 	end
 
 Permissable uses a single "permissions" table (and subsuquently a Permission model), with a polymorphic relationship
@@ -24,18 +21,34 @@ This documention is incomplete... I'll add more later.
 == Usage
 
 	class User < ActiveRecord::Base
-	  permissable do |configure|
-	    configure.permission_for :read, :posts, :categories
-	    configure.permission_for [:read, :write, :moderate], :comments
-	  end
+	  has_permissions_for [:section, :category], :to => [:read, :write, :moderate]
 	end
 
-The permissable method accepts a block containing permission declarations.
-Each call to permission_for accepts two attributes.
+The permissable method accepts two options:
 
 * method: The permission you want to assign (read, write, moderate, etc)
-* resources: A list of resources to assign those permissions to
+* options: A hash of options.
 
+The only required option is the :to key, which defines a number of permisssions to assign to the speficied resource(s)
+
+== Setting Permissions via Association
+
+Permissable also allows you to specify permissions via an association. For instance say your User has_many roles, and you would like the
+permissions to be based on a particular user's roles. To do this, add the :through option when setting permissions:
+
+	:through => :roles
+	
+When permissable does permission lookups on any of the resources specified in has_permissions_for it will use the assocation to define them.
+Instead of looking up User.permissions, it will now lookup user.roles.permissions.
+
+== Planned Updates
+
+In the near future there are plans to add the ability to "eager_load" permissions on a user the first time it is created. When using this configuration 
+option, ALL permissions relating to that user are looked up in a single database query, and then cached to the user instance. By default I think this may be the proper way to handle it anyway.
+
+We are also planning to implement permission "chains". Basically this will define a series of "levels" to your permission. For instance a user
+who can "write" a model, would also be able to "read" a model. You would be able to tell Permissable which methods chain from each other and
+the order they should rely on.  Think about how a statemachine transitions from one state to another in a way....
 
 == Note on Patches/Pull Requests
  
