@@ -41,6 +41,19 @@ permissions to be based on a particular user's roles. To do this, add the :throu
 When permissable does permission lookups on any of the resources specified in has_permissions_for it will use the assocation to define them.
 Instead of looking up User.permissions, it will now lookup user.roles.permissions.
 
+== Always allowing specific members
+
+If you would like can? to always pass for a particular member, use the :allow_with option with has_permissions_for. The allow_with option accepts a method name within your
+member model that will be called prior to checking permissions from the database.
+
+	class User < ActiveRecord::Base
+	  has_permissions_for [:section, :category], :to => [:read, :write, :moderate], :allow_with => :is_admin?
+	  
+	  def is_admin?
+	    // your logic here. If this resolves to true... can? will also be true.
+	  end
+	end
+
 == Planned Updates
 
 In the near future there are plans to add the ability to "eager_load" permissions on a user the first time it is created. When using this configuration 

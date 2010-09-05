@@ -5,6 +5,7 @@ module Permissable
     def self.included(base)      
       base.send :include, InstanceMethods
       base.send :attr_protected, :member_identifier
+      base.send :attr_protected, :permissable_lookups
     end
      
     # This module includes methods that should exist on ALL members.
@@ -12,6 +13,7 @@ module Permissable
       
       # The can? method returns a boolen value specifying whether or not this member can perform the specific method on resource
       def can?(method, resource)
+        return true if !allow_permission_with_method.nil? && (send "#{allow_permission_with_method}")
         permissions_for(resource, method).exists?
       end
       
@@ -65,6 +67,8 @@ module Permissable
           
       # Provide an instance method to our associations
       def permissable_associations; self.class.permissable_associations; end
+      # Find our permission override if available
+      def allow_permission_with_method; self.class.allow_permission_with_method; end
       
       private 
       

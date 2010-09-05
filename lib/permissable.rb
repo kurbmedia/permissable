@@ -69,33 +69,41 @@ module Permissable
             assoc = options[:through].to_s.classify.constantize
             
             # Our association also creates a has_many association on our permissions table.
-            assoc.class_eval do
+            assoc.class_eval do              
               has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless respond_to? :permissions
             end
-                        
+                                    
           end
-          
+
           # Setup a has_many association of permissions on our resource.
-          resource.constantize.class_eval do 
-            include Permissable::Resource
+          resource.constantize.class_eval do             
             has_many(:permissions, :as => :resource, :conditions => { :resource_type => "#{self.to_s}" }) unless respond_to? :permissions
           end
           
+          resource.constantize.instance_eval{ include Permissable::Resource }
+          
+        end
+        
+        if options.has_key?(:allow_with)
+          write_inheritable_attribute(:allow_permission_with_method, options[:allow_with])
         end
         
         # This class becomes a member to resources.
         include Permissable::Member
+        class_inheritable_accessor :permission_types
+        self.send :permission_types=, options[:to]
         
         # Members create a has_many association on permissions as a member.
         has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless respond_to? :permissions
         
       end 
       
+      # Allow a method to override database lookups
+      def allow_permission_with_method; read_inheritable_attribute(:allow_permission_with_method); end
+      
       # Each time has_permissions_for is called, different associations may exist.
-      # This provides a way to store and update them all as necessary.
-      def permissable_associations
-        read_inheritable_attribute(:permissable_associations)
-      end  
+      # This provides a way to store and update them all as necessary.      
+      def permissable_associations; read_inheritable_attribute(:permissable_associations); end 
          
     end    
 end
