@@ -12,9 +12,15 @@ module Permissable
     module InstanceMethods
       
       # The can? method returns a boolen value specifying whether or not this member can perform the specific method on resource
-      def can?(method, resource)
-        return true if !allow_permission_with_method.nil? && (send "#{allow_permission_with_method}")
-        permissions_for(resource, method).exists?
+      def can?(methods, resource)
+        unless allow_permission_with_method.nil?
+          if self.respond_to? "#{allow_permission_with_method}"
+            return true if (send "#{allow_permission_with_method}")
+          end
+        end
+        methods = [methods].flatten.collect{ |m| m.to_sym }
+        methods = find_methods_from_chain(methods)
+        permissions_for(resource, methods).exists?
       end
       
       # Alias to can? to get the inverse.
@@ -68,9 +74,28 @@ module Permissable
       # Provide an instance method to our associations
       def permissable_associations; self.class.permissable_associations; end
       # Find our permission override if available
-      def allow_permission_with_method; self.class.allow_permission_with_method; end
+      def allow_permission_with_method; self.class.permissable_options[:allow_permission_with_method]; end
+      # See if there is a permissions chain
+      def permission_chain; self.class.permissable_options[:permission_chain] || {}; end
       
       private 
+      
+      def find_methods_from_chain(methods)
+        
+        return methods if permission_chain.empty?
+        allowed_methods = []
+        
+        methods.each do |method|
+          permission_chain.each_pair do |key, value|
+            value = [value].flatten.collect{ |v| v.to_sym }
+            allowed_methods << key.to_sym if value.include?(method)
+          end
+        end
+        
+        allowed_methods << methods
+        allowed_methods.flatten.uniq
+        
+      end
       
       # Looks up permissions for a particular resource.
       def permissions_for(resource, methods = nil)

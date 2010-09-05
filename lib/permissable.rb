@@ -56,6 +56,7 @@ module Permissable
         raise Permissable::PermissionNotDefined, "has_permissions_for missing the :to option." unless options.has_key?(:to) and !options[:to].empty?
         
         write_inheritable_attribute(:permissable_associations, {}) if permissable_associations.nil?
+        write_inheritable_attribute(:permissable_options, {}) if permissable_options.nil?
         resources = [resources].flatten
         
         resources.each do |resource| 
@@ -71,6 +72,13 @@ module Permissable
             # Our association also creates a has_many association on our permissions table.
             assoc.class_eval do              
               has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless respond_to? :permissions
+              include Permissable::Member
+              class_inheritable_accessor :permission_types
+              write_inheritable_attribute(:permissable_associations, {})
+              write_inheritable_attribute(:permissable_options, {}) if permissable_options.nil?
+              permissable_options[:allow_permission_with_method] = options[:allow_with] if options.has_key?(:allow_with)        
+              permissable_options[:permission_chain] = options[:chain] if options.has_key?(:chain)
+              self.send :permission_types=, options[:to]
             end
                                     
           end
@@ -84,9 +92,8 @@ module Permissable
           
         end
         
-        if options.has_key?(:allow_with)
-          write_inheritable_attribute(:allow_permission_with_method, options[:allow_with])
-        end
+        permissable_options[:allow_permission_with_method] = options[:allow_with] if options.has_key?(:allow_with)        
+        permissable_options[:permission_chain] = options[:chain] if options.has_key?(:chain)
         
         # This class becomes a member to resources.
         include Permissable::Member
@@ -98,8 +105,8 @@ module Permissable
         
       end 
       
-      # Allow a method to override database lookups
-      def allow_permission_with_method; read_inheritable_attribute(:allow_permission_with_method); end
+      # Access options such as our method override, or our permission chain.
+      def permissable_options; read_inheritable_attribute(:permissable_options); end
       
       # Each time has_permissions_for is called, different associations may exist.
       # This provides a way to store and update them all as necessary.      
