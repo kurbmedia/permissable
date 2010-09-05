@@ -54,14 +54,23 @@ member model that will be called prior to checking permissions from the database
 	  end
 	end
 
+== Chaining Permissions
+
+If you want your permissions to have a heirarchy, use the :chain option. For example, say you have three permission types: read, write, and moderate. In this instance, moderators should also be able to read and write a resource, and members who can write should also be able to read the resource. To do this, add this chain when calling has_permissions_for:
+
+	class User < ActiveRecord::Base
+	  	has_permissions_for [:resource], 
+	                    :to => [:read, :write, :moderate],
+	                    :chain => { :moderate => [:read, :write], :write => [:read] }
+	end
+	
+Now calling can?(:read, @resource) will evaluate to true when permissions exist for reading or writing, and can?(:read, @resource) will evaluate to true when permissions exist at least to write.
+
 == Planned Updates
 
 In the near future there are plans to add the ability to "eager_load" permissions on a user the first time it is created. When using this configuration 
 option, ALL permissions relating to that user are looked up in a single database query, and then cached to the user instance. By default I think this may be the proper way to handle it anyway.
 
-We are also planning to implement permission "chains". Basically this will define a series of "levels" to your permission. For instance a user
-who can "write" a model, would also be able to "read" a model. You would be able to tell Permissable which methods chain from each other and
-the order they should rely on.  Think about how a statemachine transitions from one state to another in a way....
 
 == Note on Patches/Pull Requests
  
