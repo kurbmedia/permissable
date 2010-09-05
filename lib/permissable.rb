@@ -80,7 +80,7 @@ module Permissable
             assoc.class_eval do              
               has_many(:permissions, :as => :member, :dependent => :destroy) unless respond_to? :permissions
               include Permissable::Member
-              class_inheritable_accessor :permission_types
+              class_inheritable_accessor :permissable_types
               self.send :permissable_types=, options[:to]
               write_inheritable_attribute(:permissable_options, {}) if permissable_options.nil?
               permissable_options[:allow_permission_with_method] = options[:allow_with] if options.has_key?(:allow_with)        

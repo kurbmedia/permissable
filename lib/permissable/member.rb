@@ -95,7 +95,7 @@ module Permissable
       def permission_chain; self.class.permissable_options[:permission_chain] || {}; end
       
       def permissions_for(resource)
-        fetch_permissions_for(resource)
+        fetch_permissions_for(resource).all.collect{ |perm| perm.permission_type.to_sym }
       end
       
       def lookup_permissions!
