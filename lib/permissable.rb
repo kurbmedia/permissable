@@ -15,6 +15,7 @@
 require 'permissable/member'
 require 'permissable/permission'
 require 'permissable/resource'
+require 'permissable/permissions_cache'
 
 module Permissable
     
@@ -22,7 +23,13 @@ module Permissable
             
       def included(base)
         base.extend ClassMethods
-      end     
+      end
+      
+      # Creates a hash from a resource to be used in a where context.
+      def flatten_resource(obj)
+        return { :resource_id => obj.id, :resource_type => obj.class.to_s } unless obj.is_a?(Array)
+        { :resource_id => obj.collect{ |o| o.id }, :resource_type => obj.collect{ |o| o.class.to_s } }
+      end
       
     end
     
@@ -71,21 +78,20 @@ module Permissable
             
             # Our association also creates a has_many association on our permissions table.
             assoc.class_eval do              
-              has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
+              has_many(:permissions, :as => :member, :dependent => :destroy) unless respond_to? :permissions
               include Permissable::Member
               class_inheritable_accessor :permission_types
-              write_inheritable_attribute(:permissable_associations, {})
+              self.send :permissable_types=, options[:to]
               write_inheritable_attribute(:permissable_options, {}) if permissable_options.nil?
               permissable_options[:allow_permission_with_method] = options[:allow_with] if options.has_key?(:allow_with)        
-              permissable_options[:permission_chain] = options[:chain] if options.has_key?(:chain)
-              self.send :permission_types=, options[:to]
+              permissable_options[:permission_chain] = options[:chain] if options.has_key?(:chain)              
             end
                                     
           end
 
           # Setup a has_many association of permissions on our resource.
           resource.constantize.class_eval do             
-            has_many(:permissions, :as => :resource, :conditions => { :resource_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
+            has_many(:permissions, :as => :resource, :dependent => :destroy) unless respond_to? :permissions
           end
           
           resource.constantize.instance_eval{ include Permissable::Resource }
@@ -97,11 +103,13 @@ module Permissable
         
         # This class becomes a member to resources.
         include Permissable::Member
-        class_inheritable_accessor :permission_types
-        self.send :permission_types=, options[:to]
+        class_inheritable_accessor :permissable_types
+        class_inheritable_accessor :permissable_resources
+        self.send :permissable_types=, options[:to]
+        self.send :permissable_resources=, resources
         
         # Members create a has_many association on permissions as a member.
-        has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
+        has_many(:permissions, :as => :member, :dependent => :destroy) unless respond_to? :permissions
         
       end 
       
