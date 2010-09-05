@@ -30,6 +30,11 @@ module Permissable
       # TODO: There has to be a friendlier way to mass assign permissions to roles rather than
       # looping each one for existence and then saving separately.
       def can!(methods, resources)
+        
+        # This method should return all of the new permissions that were created, so we build a 
+        # response array to return
+        response = []
+        
         [resources].flatten.each do |resource|
           
           # Kind of unecessary but since some methods allow you to specify a Classname directly, this just
@@ -48,9 +53,12 @@ module Permissable
               perm = Permission.new(:member_id => member_id, :member_type => identifier[:member_type], :permission_type => method.to_s.downcase)
               perm.resource = resource
               perm.save
+              response << perm
             end
           end
         end
+        
+        (response.size == 1) ? response.first : response
         
       end
       

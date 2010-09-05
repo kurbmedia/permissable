@@ -71,7 +71,7 @@ module Permissable
             
             # Our association also creates a has_many association on our permissions table.
             assoc.class_eval do              
-              has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless respond_to? :permissions
+              has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
               include Permissable::Member
               class_inheritable_accessor :permission_types
               write_inheritable_attribute(:permissable_associations, {})
@@ -85,7 +85,7 @@ module Permissable
 
           # Setup a has_many association of permissions on our resource.
           resource.constantize.class_eval do             
-            has_many(:permissions, :as => :resource, :conditions => { :resource_type => "#{self.to_s}" }) unless respond_to? :permissions
+            has_many(:permissions, :as => :resource, :conditions => { :resource_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
           end
           
           resource.constantize.instance_eval{ include Permissable::Resource }
@@ -101,7 +101,7 @@ module Permissable
         self.send :permission_types=, options[:to]
         
         # Members create a has_many association on permissions as a member.
-        has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }) unless respond_to? :permissions
+        has_many(:permissions, :as => :member, :conditions => { :member_type => "#{self.to_s}" }), :dependent => :destroy unless respond_to? :permissions
         
       end 
       
