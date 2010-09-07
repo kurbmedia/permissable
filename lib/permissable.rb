@@ -27,8 +27,8 @@ module Permissable
       
       # Creates a hash from a resource to be used in a where context.
       def flatten_resource(obj)
-        return { :resource_id => obj.id, :resource_type => obj.base_class.to_s } unless obj.is_a?(Array)
-        { :resource_id => obj.collect{ |o| o.id }, :resource_type => obj.collect{ |o| o.base_class.to_s } }
+        return { :resource_id => obj.id, :resource_type => (obj.respond_to?(:base_class) ? obj.base_class.to_s : obj.class.base_class.to_s) } unless obj.is_a?(Array)
+        { :resource_id => obj.collect{ |o| o.id }, :resource_type => obj.collect{ |o| (o.respond_to?(:base_class) ? o.base_class.to_s : o.class.base_class.to_s) } }
       end
       
     end

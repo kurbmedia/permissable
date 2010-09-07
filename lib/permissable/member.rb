@@ -134,7 +134,7 @@ module Permissable
       
       def fetch_scope(resource)
         return resource if resource.is_a?(String)
-        (resource.is_a?(Class)) ? resource.to_s : resource.base_class.to_s.classify
+        (resource.respond_to? :base_class) ? resource.base_class.to_s : resource.class.base_class.to_s.classify
       end
       
       # Look to see if we have a permissions cache.
