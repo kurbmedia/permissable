@@ -56,8 +56,9 @@ module Permissable
             
             # Create a new permission for each member (once if its self, multiple times if its associated)
             [identifier[:member_id]].flatten.each do |member_id|
-              perm = Permission.new(:member_id => member_id, :member_type => identifier[:member_type], :permission_type => method.to_s.downcase)
-              perm.resource = resource
+              perm = Permission.where(:member_id => member_id, :member_type => identifier[:member_type]).for_resource(resource).first || Permission.new(:member_id => member_id, :member_type => identifier[:member_type])
+              perm.permission_type = method.to_s.downcase
+              perm.resource        = resource if perm.new_record?
               perm.save
               result_response << perm
             end
