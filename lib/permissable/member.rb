@@ -41,6 +41,12 @@ module Permissable
         # response array to return
         result_response = []
         
+        # Load all permissions fresh so we can kill dupes.
+        saved_permissions = Permission.all
+        # Store new permissions in an array so we can squeeze into one transaction.
+        permissions_to_add    = []
+        permissions_to_update = []
+        
         [resources].flatten.each do |resource|
           
           # Kind of unecessary but since some methods allow you to specify a Classname directly, this just
@@ -51,21 +57,37 @@ module Permissable
           identifier = member_identifier(resource)
           
           [methods].flatten.each do |method|
-            # Permission already exists, continue.
-            next if can?(method, resource, false)
+            
+            resource_type = (resource.respond_to?(:base_class) ? resource.base_class.to_s : resource.class.base_class.to_s)
             
             # Create a new permission for each member (once if its self, multiple times if its associated)
-            [identifier[:member_id]].flatten.each do |member_id|
-              perm = Permission.where(:member_id => member_id, :member_type => identifier[:member_type]).for_resource(resource).first || Permission.new(:member_id => member_id, :member_type => identifier[:member_type])
+            [identifier[:member_id]].flatten.each do |member_id|              
+              perm = saved_permissions.detect{ |p| p.member_id == member_id && p.member_type == identifier[:member_type] && p.resource_id == resource.id && p.resource_type == resource_type }  || Permission.new(:member_id => member_id, :member_type => identifier[:member_type])
               perm.permission_type = method.to_s.downcase
               perm.resource        = resource if perm.new_record?
-              perm.save
-              result_response << perm
+              (perm.new_record?) ? (permissions_to_add << perm) : (permissions_to_update << perm)
             end
           end
         end
         
-        (result_response.size == 1) ? result_response.first : result_response
+        
+        unless permissions_to_add.empty?
+          attrs = permissions_to_add.first.attributes.keys.collect{ |k| k.to_s }
+          sql_insert = "INSERT INTO `permissions` (`#{attrs.join("`,`")}`) VALUES"
+          sql_values = []
+          permissions_to_add.each do |perm|
+            vals = []
+            attrs.each{ |a| vals << ((a == "created_at" || a == "updated_at") ? DateTime.now.utc.strftime("%Y-%m-%d %H:%M:%S") : ((a == "id") ? "NULL" : perm.send(a.to_sym))) }
+            sql_values << "('#{vals.join("','")}')"
+          end        
+          Permission.connection.execute("#{sql_insert} #{sql_values.join(',')}")
+        end
+        
+        unless permissions_to_update.empty?
+          permissions_to_update.each do |perm|
+            Permission.update_all(['permission_type = ?', perm.permission_type ], ['id = ?', perm.id])
+          end
+        end
         
       end
       
@@ -100,7 +122,7 @@ module Permissable
       end
       
       def lookup_permissions!
-        @permissions_cache = PermissionsCache.new(Permission.where(:resource_type => self.class.permissable_resources.collect{ |r| r.to_s.classify }).all)
+        @permissions_cache ||= PermissionsCache.new(Permission.where(:resource_type => self.class.permissable_resources.collect{ |r| r.to_s.classify }).all)
       end
       
       private 
