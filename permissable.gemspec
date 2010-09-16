@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{permissable}
-  s.version = "0.3.0"
+  s.version = "0.3.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Brent Kirby"]
-  s.date = %q{2010-09-13}
+  s.date = %q{2010-09-16}
   s.description = %q{Permissable lets you set a number of 'permissions' to your database models. By assigning 'members' to 'resources' (models) you can specify various permission states.}
   s.email = %q{brent@kurbmedia.com}
   s.extra_rdoc_files = [
