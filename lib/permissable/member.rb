@@ -122,7 +122,23 @@ module Permissable
       end
       
       def lookup_permissions!
-        @permissions_cache ||= PermissionsCache.new(Permission.where(:resource_type => self.class.permissable_resources.collect{ |r| r.to_s.classify }).all)
+
+        resource_types = self.class.permissable_resources.collect{ |r| r.to_s.classify }
+        member_ids   = []
+        member_types = []
+        
+        resource_types.each do |type|
+          identifier = member_identifier(type)
+          member_ids   << identifier[:member_id]
+          member_types << identifier[:member_type]
+        end
+        
+        member_ids   = member_ids.uniq; member_types = member_types.uniq;
+        member_ids   = member_ids.first unless member_ids.size > 1
+        member_types = member_types.first unless member_types.size > 1
+        
+        @permissions_cache ||= PermissionsCache.new(Permission.where(:member_id => member_ids, :member_type => member_types, :resource_type => resource_types).all)
+        
       end
       
       private 
