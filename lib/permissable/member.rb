@@ -72,15 +72,20 @@ module Permissable
         
         
         unless permissions_to_add.empty?
-          attrs = permissions_to_add.first.attributes.keys.collect{ |k| k.to_s }
-          sql_insert = "INSERT INTO `permissions` (`#{attrs.join("`,`")}`) VALUES"
-          sql_values = []
-          permissions_to_add.each do |perm|
-            vals = []
-            attrs.each{ |a| vals << ((a == "created_at" || a == "updated_at") ? DateTime.now.utc.strftime("%Y-%m-%d %H:%M:%S") : ((a == "id") ? "NULL" : perm.send(a.to_sym))) }
-            sql_values << "('#{vals.join("','")}')"
-          end        
-          Permission.connection.execute("#{sql_insert} #{sql_values.join(',')}")
+          Permission.transaction do
+            permissions_to_add.each do |perm|
+              perm.save
+            end
+          end
+          # attrs = permissions_to_add.first.attributes.keys.collect{ |k| k.to_s }
+          #          sql_insert = (ActiveRecord::Base.connection.adapter_name.underscore.include?('mysql')) ? "INSERT INTO `permissions` (\"#{attrs.join('","')}\") VALUES" : "INSERT INTO \"permissions\" (\"#{attrs.join('","')}\") VALUES"
+          #          sql_values = []
+          #          permissions_to_add.each do |perm|
+          #            vals = []
+          #            attrs.each{ |a| vals << ((a == "created_at" || a == "updated_at") ? DateTime.now.utc.strftime("%Y-%m-%d %H:%M:%S") : ((a == "id") ? "NULL" : perm.send(a.to_sym))) }
+          #            sql_values << "('#{vals.join("','")}')"
+          #          end        
+          #          Permission.connection.execute("#{sql_insert} #{sql_values.join(',')};")
         end
         
         unless permissions_to_update.empty?
