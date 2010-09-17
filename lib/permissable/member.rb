@@ -47,7 +47,7 @@ module Permissable
         permissions_to_add    = []
         permissions_to_update = []
         
-        [resources].flatten.each do |resource|
+        [resources].flatten.uniq.each do |resource|
           
           # Kind of unecessary but since some methods allow you to specify a Classname directly, this just
           # safegaurds against trying to do the same here.
@@ -61,11 +61,19 @@ module Permissable
             resource_type = (resource.respond_to?(:base_class) ? resource.base_class.to_s : resource.class.base_class.to_s)
             
             # Create a new permission for each member (once if its self, multiple times if its associated)
-            [identifier[:member_id]].flatten.each do |member_id|              
+            [identifier[:member_id]].flatten.uniq.each do |member_id|              
               perm = saved_permissions.detect{ |p| p.member_id == member_id && p.member_type == identifier[:member_type] && p.resource_id == resource.id && p.resource_type == resource_type }  || Permission.new(:member_id => member_id, :member_type => identifier[:member_type])
               perm.permission_type = method.to_s.downcase
               perm.resource        = resource if perm.new_record?
-              (perm.new_record?) ? (permissions_to_add << perm) : (permissions_to_update << perm)
+              
+              if perm.new_record?
+                puts "NEW RECORD!!!!!"
+                permissions_to_add << perm.attributes
+              else
+                puts "OLD RECORD!!!"
+                permissions_to_update << perm if perm.changed?
+              end
+              
             end
           end
         end
@@ -73,24 +81,15 @@ module Permissable
         
         unless permissions_to_add.empty?
           Permission.transaction do
-            permissions_to_add.each do |perm|
-              perm.save
-            end
+            Permission.create(permissions_to_add)
           end
-          # attrs = permissions_to_add.first.attributes.keys.collect{ |k| k.to_s }
-          #          sql_insert = (ActiveRecord::Base.connection.adapter_name.underscore.include?('mysql')) ? "INSERT INTO `permissions` (\"#{attrs.join('","')}\") VALUES" : "INSERT INTO \"permissions\" (\"#{attrs.join('","')}\") VALUES"
-          #          sql_values = []
-          #          permissions_to_add.each do |perm|
-          #            vals = []
-          #            attrs.each{ |a| vals << ((a == "created_at" || a == "updated_at") ? DateTime.now.utc.strftime("%Y-%m-%d %H:%M:%S") : ((a == "id") ? "NULL" : perm.send(a.to_sym))) }
-          #            sql_values << "('#{vals.join("','")}')"
-          #          end        
-          #          Permission.connection.execute("#{sql_insert} #{sql_values.join(',')};")
         end
         
         unless permissions_to_update.empty?
-          permissions_to_update.each do |perm|
-            Permission.update_all(['permission_type = ?', perm.permission_type ], ['id = ?', perm.id])
+          types = permissions_to_update.collect{ |p| p.permission_type.to_s }.uniq
+          types.each do |type|
+            to_update = permissions_to_update.find_all{ |perm| perm.permission_type.to_s == type }
+            Permission.update_all({ :permission_type => type }, { :id => to_update.collect{ |perm| perm.id }.uniq })
           end
         end
         
