@@ -42,7 +42,7 @@ module Permissable
     end
     
     def all
-      results = @_query_results || []
+      results = @_query_results || permissions
       @_query_results = nil
       results
     end
