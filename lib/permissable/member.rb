@@ -42,7 +42,9 @@ module Permissable
         result_response = []
         
         # Load all permissions fresh so we can kill dupes.
-        saved_permissions = Permission.all
+        saved_permissions = lookup_permissions!(resources.collect{ |r| (r.respond_to? :base_class) ? r.base_class.to_s : r.class.base_class.to_s.classify }.uniq)
+        saved_permissions = saved_permissions.all
+        
         # Store new permissions in an array so we can squeeze into one transaction.
         permissions_to_add    = []
         permissions_to_update = []
@@ -81,7 +83,10 @@ module Permissable
         
         unless permissions_to_add.empty?
           Permission.transaction do
-            Permission.create(permissions_to_add)
+            permissions_to_add.each do |attrs|
+              perm = Permission.new(attrs)
+              perm.save(:validate => false)
+            end
           end
         end
         
@@ -125,9 +130,9 @@ module Permissable
         fetch_permissions_for(resource).all.collect{ |perm| perm.permission_type.to_sym }
       end
       
-      def lookup_permissions!
+      def lookup_permissions!(resource_types = nil)
 
-        resource_types = self.class.permissable_resources.collect{ |r| r.to_s.classify }
+        resource_types ||= self.class.permissable_resources.collect{ |r| r.to_s.classify }
         member_ids   = []
         member_types = []
         
