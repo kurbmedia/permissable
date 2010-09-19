@@ -42,7 +42,7 @@ module Permissable
         result_response = []
         
         # Load all permissions fresh so we can kill dupes.
-        saved_permissions = lookup_permissions!(resources.collect{ |r| (r.respond_to? :base_class) ? r.base_class.to_s : r.class.base_class.to_s.classify }.uniq)
+        saved_permissions = lookup_permissions!([resources].flatten.collect{ |r| (r.respond_to? :base_class) ? r.base_class.to_s : r.class.base_class.to_s.classify }.uniq)
         saved_permissions = saved_permissions.all
         
         # Store new permissions in an array so we can squeeze into one transaction.
