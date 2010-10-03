@@ -10,14 +10,6 @@ It allows you to define a member using the +permissable+ method:
 Permissable uses a single "permissions" table (and subsuquently a Permission model), with a polymorphic relationship
 between both the member and the resource.
 
-Important to know... This is my first attempt at a RubyGem. I'm using the gem itself for an application currently in development, 
-so you can be assured at least the basic functionality should work as it goes along. For the time being, I'm not writing any tests,
-but there will be some later.
-
-I decided to develop it because I couldn't find anything that achieved the same thing that didn't seem cumbersome or akward to configure.
-
-This documention is incomplete... I'll add more later.
-
 == Usage
 
 	class User < ActiveRecord::Base
@@ -30,6 +22,13 @@ The permissable method accepts two options:
 * options: A hash of options.
 
 The only required option is the :to key, which defines a number of permisssions to assign to the speficied resource(s)
+
+Once permissions have been assigned, use the can? method to check for them:
+
+	# current_user is the currently logged in user
+	# @resource is a loaded resource model of any type
+	
+	current_user.can?(:read, @resource)
 
 == Setting Permissions via Association
 
@@ -66,11 +65,42 @@ If you want your permissions to have a heirarchy, use the :chain option. For exa
 	
 Now calling can?(:read, @resource) will evaluate to true when permissions exist for reading or writing, and can?(:read, @resource) will evaluate to true when permissions exist at least to write.
 
-== Planned Updates
+== Eager Loading
 
-In the near future there are plans to add the ability to "eager_load" permissions on a user the first time it is created. When using this configuration 
-option, ALL permissions relating to that user are looked up in a single database query, and then cached to the user instance. By default I think this may be the proper way to handle it anyway.
+More than likely you want to eager-load permissions for each user. To do this, simply call load_permissions! on that user.
 
+	# current_user returns the currently logged in user
+	current_user.load_permissions!
+	
+All requests for can? will now use a permissions cache.
+
+== Creating / Assigning new Permissions
+
+To give a user permission to access a resource, use the can! method. Calling this method creates and saves the new permission.
+
+	# current_user returns the currently logged in user
+	# @resource is a loaded resource of any type/class/format
+	
+	# current_user.can?(:write, @resource)  #=> false
+		
+	current_user.can!(:write, @resource)
+	
+	# current_user.can?(:write, @resource)  #=> true
+	
+can! can accept arrays or single values for both the permission to assign, as well as the resources to assign them to:
+
+	current_user.can!([:read, :write, :moderate], [@resource1, @resource2])
+
+== Looking up existing permissions
+
+To lookup any permissions that have been assigned to a user/resource, use permissions_for:
+
+	current_user.permissions_for(@resource)		#=> [:read, :write]
+
+
+== Note / Todo
+
+At this point there aren't any test suites, as this gem was originally written/extracted from a project we were working on. Everything passes in the project itself, and this gem is being used in production, but tests still need to be integrated into the gem itself. Feel free to contribute any.
 
 == Note on Patches/Pull Requests
  
